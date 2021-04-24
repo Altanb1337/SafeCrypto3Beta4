@@ -4,6 +4,11 @@ open Fable.Remoting.Server
 open Fable.Remoting.Giraffe
 open Saturn
 
+open Microsoft.AspNetCore.Http
+
+open FSharp.Control.Tasks
+open Giraffe
+
 open Shared
 
 type Storage() =
@@ -37,7 +42,8 @@ let todosApi =
                   match storage.AddTodo todo with
                   | Ok () -> return todo
                   | Error e -> return failwith e
-              } }
+              }
+      upload = fun file -> async { return "ok" } }
 
 let webApp =
     Remoting.createApi ()
@@ -45,10 +51,29 @@ let webApp =
     |> Remoting.fromValue todosApi
     |> Remoting.buildHttpHandler
 
+let fileUploadHandler =
+    fun (next: HttpFunc) (ctx: HttpContext) ->
+        task {
+            return!
+                (match ctx.Request.HasFormContentType with
+                 | false -> RequestErrors.BAD_REQUEST "Bad request"
+                 | true ->
+                     ctx.Request.Form.Files
+                     |> Seq.fold (fun acc file -> sprintf "%s\n%s" acc file.FileName) ""
+                     |> text)
+                    next
+                    ctx
+        }
+
+let webApp2 =
+    choose [ webApp
+             route "/ping" >=> text "pong"
+             route "/upload" >=> fileUploadHandler ]
+
 let app =
     application {
         url "http://0.0.0.0:8085"
-        use_router webApp
+        use_router webApp2
         memory_cache
         use_static "public"
         use_gzip

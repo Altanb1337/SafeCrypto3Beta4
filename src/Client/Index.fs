@@ -4,13 +4,19 @@ open Elmish
 open Fable.Remoting.Client
 open Shared
 
+open FileUpload
+
 type Model = { Todos: Todo list; Input: string }
+
+open Browser.Types
 
 type Msg =
     | GotTodos of Todo list
     | SetInput of string
     | AddTodo
     | AddedTodo of Todo
+    | HandleFileUpload of File
+    | UploadedFile of string
 
 let todosApi =
     Remoting.createApi ()
@@ -40,6 +46,18 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         { model with
               Todos = model.Todos @ [ todo ] },
         Cmd.none
+    | HandleFileUpload file ->
+        let uploadToApi (file: File) : Async<string> =
+            async {
+                let! fileBytes = file.ReadAsByteArray()
+                let! output = todosApi.upload fileBytes
+                return output
+            }
+
+        let text = sprintf "File name: %i" file.size
+
+        { model with Input = text }, Cmd.OfAsync.perform uploadToApi file UploadedFile
+    | UploadedFile output -> { model with Input = output }, Cmd.none
 
 open Feliz
 open Feliz.Bulma
@@ -89,6 +107,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                 ]
             ]
         ]
+        createFileUpload (HandleFileUpload >> dispatch)
     ]
 
 let view (model: Model) (dispatch: Msg -> unit) =
