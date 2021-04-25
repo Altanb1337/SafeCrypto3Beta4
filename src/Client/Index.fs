@@ -4,9 +4,9 @@ open Elmish
 open Fable.Remoting.Client
 open Shared
 
-open FileUpload
-
 type Model = { Todos: Todo list; Input: string }
+
+open Feliz
 
 open Browser.Types
 
@@ -15,8 +15,8 @@ type Msg =
     | SetInput of string
     | AddTodo
     | AddedTodo of Todo
-    | HandleFileUpload of File
-    | UploadedFile of string
+    | HandleFile of Browser.Types.File
+    | HandledFile of string
 
 let todosApi =
     Remoting.createApi ()
@@ -25,10 +25,8 @@ let todosApi =
 
 let init () : Model * Cmd<Msg> =
     let model = { Todos = []; Input = "" }
-
     let cmd =
         Cmd.OfAsync.perform todosApi.getTodos () GotTodos
-
     model, cmd
 
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
@@ -36,6 +34,7 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     | GotTodos todos -> { model with Todos = todos }, Cmd.none
     | SetInput value -> { model with Input = value }, Cmd.none
     | AddTodo ->
+        Browser.Dom.console.log ("AddTodo")
         let todo = Todo.create model.Input
 
         let cmd =
@@ -46,18 +45,21 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         { model with
               Todos = model.Todos @ [ todo ] },
         Cmd.none
-    | HandleFileUpload file ->
+    | HandleFile file ->
         let uploadToApi (file: File) : Async<string> =
             async {
                 let! fileBytes = file.ReadAsByteArray()
-                let! output = todosApi.upload fileBytes
+                let! output = todosApi.uploadFile fileBytes
                 return output
             }
 
-        let text = sprintf "File name: %i" file.size
+        Browser.Dom.console.log (sprintf $"File name: {file.name}")
+        Browser.Dom.console.log (sprintf $"File size: {file.size}")
 
-        { model with Input = text }, Cmd.OfAsync.perform uploadToApi file UploadedFile
-    | UploadedFile output -> { model with Input = output }, Cmd.none
+        model, Cmd.OfAsync.perform uploadToApi file HandledFile
+    | HandledFile output ->
+        Browser.Dom.console.log (sprintf $"Result: {output}")
+        model, Cmd.none
 
 open Feliz
 open Feliz.Bulma
@@ -107,7 +109,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                 ]
             ]
         ]
-        createFileUpload (HandleFileUpload >> dispatch)
+        FileUpload.fileUpload "Choose a file" (HandleFile >> dispatch)
     ]
 
 let view (model: Model) (dispatch: Msg -> unit) =

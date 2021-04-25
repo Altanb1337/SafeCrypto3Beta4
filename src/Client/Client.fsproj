@@ -5,9 +5,9 @@
     <DefineConstants>FABLE_COMPILER</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="FileUpload.fs" />
     <None Include="index.html" />
     <None Include="paket.references" />
+    <Compile Include="FileUpload.fs" />
     <Compile Include="Index.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>

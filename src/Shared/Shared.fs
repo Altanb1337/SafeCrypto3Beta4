@@ -19,4 +19,4 @@ module Route =
 type ITodosApi =
     { getTodos: unit -> Async<Todo list>
       addTodo: Todo -> Async<Todo>
-      upload: byte array -> Async<string> }
+      uploadFile: byte array -> Async<string> }

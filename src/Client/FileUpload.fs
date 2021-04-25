@@ -1,58 +1,60 @@
-module FileUpload
+﻿module FileUpload
 
-open Fable.React
-open Fable.React.Props
-open Fable.FontAwesome
-open Fable.Core
 open Fable.Core.JsInterop
+open Feliz
 
-open Fulma
+open Browser.Types
 
-let handleFileEvent onLoad (fileEvent: Browser.Types.Event) =
-    let files : Browser.Types.FileList = !!fileEvent.target?files
+let handleFileEvent (onLoad: Browser.Types.File -> unit) (fileEvent: Browser.Types.Event) =
+    let files : FileList = !!fileEvent.target?files
 
     if files.length > 0 then
-        let reader = Browser.Dom.FileReader.Create()
-        reader.onload <- (fun _ -> reader.result |> unbox |> onLoad)
-        reader.readAsArrayBuffer (files.[0])
+        let fileName =
+            Browser.Dom.document.querySelector ".file-name"
 
+        fileName.textContent <- files.[0].name
+        onLoad (files.[0])
 
-let createFileUpload onLoad =
-    File.file [] [
-        File.label [] [
-            File.input [
-                Props [
-                    OnChange(handleFileEvent onLoad)
+let fileUpload text handle =
+    Html.div [
+            prop.className [
+                "file"
+                "has-name"
+                "is-fullwidth"
+            ]
+            prop.children [
+                Html.label [
+                    prop.className "file-label"
+                    prop.children [
+                        Html.input [
+                            prop.className "file-input"
+                            prop.type' "file"
+                            prop.onChange (handleFileEvent handle)
+                        ]
+                        Html.span [
+                            prop.className "file-cta"
+                            prop.children [
+                                Html.span [
+                                    prop.className "file-icon"
+                                    prop.children [
+                                        Html.i [
+                                            prop.className [ "fa"; "fa-upload" ]
+                                        ]
+                                    ]
+                                ]
+                                Html.span [
+                                    prop.className "file-label"
+                                    prop.children [
+                                        Html.text "Choose a file..."
+                                    ]
+                                ]
+                            ]
+                        ]
+                        Html.span [
+                            prop.className "file-name"
+                            prop.children [ Html.text "" ]
+                        ]
+                    ]
                 ]
             ]
-            File.cta [] [ str "Select File" ]
         ]
-    ]
-
-
-let createFileUpload2 onLoad =
-    File.file [] [
-        File.label [] [
-            File.input [
-                Props [
-                    OnChange
-                        (fun ev ->
-                            let file = ev.target?files?(0)
-                            let reader = Browser.Dom.FileReader.Create()
-
-                            reader.onload <- fun evt -> evt.target?result |> onLoad
-
-                            // reader.onerror <- fun evt ->
-                            //     dispatch ErrorReadingFile
-
-                            reader.readAsArrayBuffer (file)
-
-
-
-
-                            )
-                ]
-            ]
-            File.cta [] [ str "Select File" ]
-        ]
-    ]

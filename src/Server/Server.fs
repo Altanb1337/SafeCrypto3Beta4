@@ -43,7 +43,7 @@ let todosApi =
                   | Ok () -> return todo
                   | Error e -> return failwith e
               }
-      upload = fun file -> async { return "ok" } }
+      uploadFile = fun file -> async { return "Ok" } }
 
 let webApp =
     Remoting.createApi ()
@@ -65,7 +65,7 @@ let fileUploadHandler =
                     ctx
         }
 
-let webApp2 =
+let combined =
     choose [ webApp
              route "/ping" >=> text "pong"
              route "/upload" >=> fileUploadHandler ]
@@ -73,7 +73,7 @@ let webApp2 =
 let app =
     application {
         url "http://0.0.0.0:8085"
-        use_router webApp2
+        use_router combined
         memory_cache
         use_static "public"
         use_gzip
